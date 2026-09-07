@@ -6,7 +6,7 @@ import io
 import json
 
 st.set_page_config(page_title="Dashboard Inversión MOP", page_icon="📈", layout="wide")
-st.title("📊 Dashboard de Inversión MOP 2021")
+st.title("📊 Dashboard de Inversión MOP 2021 - comparativa por región")
 
 @st.cache_data
 def cargar_datos_seguros(filas_a_saltar):
