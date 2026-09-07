@@ -40,27 +40,39 @@ with st.spinner('Descargando y procesando datos del gobierno...'):
         tab1, tab2, tab3 = st.tabs(["📈 Visualización (Gráfico)", "📋 Tabla de Datos", "📦 Estructura JSON"])
         
         with tab1:
-            st.subheader("Gráfico de Inversión")
-            if len(df_limpio.columns) >= 2:
-                filas_a_mostrar = st.slider("Selecciona la cantidad de registros a graficar", 5, 30, 10)
+            st.subheader("📈 Gráfico de la Primera Fila")
+            
+            if len(df_limpio.columns) >= 2 and not df_limpio.empty:
+                # 1. Extraemos solo la primera fila (índice 0)
+                primera_fila = df_limpio.iloc[0]
                 
-                categorias = df_limpio.iloc[:, 0].astype(str).head(filas_a_mostrar) 
-                valores = pd.to_numeric(df_limpio.iloc[:, 1].head(filas_a_mostrar), errors='coerce') 
-
-                fig, ax = plt.subplots(figsize=(10, 5))
+                # 2. Usamos la primera celda como nombre/etiqueta principal
+                nombre_fila = primera_fila.iloc[0]
+                
+                # 3. Las categorías (Eje X) serán los nombres de todas las columnas, saltando la primera
+                categorias = df_limpio.columns[1:].astype(str)
+                
+                # 4. Los valores (Eje Y) serán los datos de la primera fila, saltando la primera celda
+                valores = pd.to_numeric(primera_fila.iloc[1:], errors='coerce')
+                
+                # Creamos la figura
+                fig, ax = plt.subplots(figsize=(12, 6))
                 ax.bar(categorias, valores, color='#2c7fb8', edgecolor='black')
 
-                ax.set_title(f'Top {filas_a_mostrar} Registros', fontsize=14)
-                ax.set_xlabel(str(df_limpio.columns[0]), fontsize=10)
-                ax.set_ylabel(str(df_limpio.columns[1]), fontsize=10)
+                # Personalización
+                ax.set_title(f'Datos para: {nombre_fila}', fontsize=14)
+                ax.set_xlabel('Columnas (Categorías)', fontsize=10)
+                ax.set_ylabel('Monto', fontsize=10)
                 
+                # Rotamos los nombres de las columnas a 45 grados por si son muy largos
                 ax.tick_params(axis='x', labelrotation=45, labelsize=9)
                 ax.grid(axis='y', linestyle='--', alpha=0.7)
                 
+                # Renderizamos en Streamlit
                 fig.tight_layout()
                 st.pyplot(fig)
             else:
-                st.warning("El dataset no tiene suficientes columnas para graficar (mínimo 2).")
+                st.warning("El dataset no tiene suficientes columnas o filas para graficar.")
                 
         with tab2:
             st.subheader("Datos Tabulares (Pandas)")
@@ -74,7 +86,7 @@ with st.spinner('Descargando y procesando datos del gobierno...'):
         st.divider()
         st.subheader("💡 Resumen Rápido")
         col1, col2 = st.columns(2)
-        col1.metric(label="Total de Registros Extraídos", value=len(datos_en_json))
+        col1.metric(label="Total de Registros Extraídos", value=len(df_limpio))
         col2.metric(label="Total de Columnas Identificadas", value=len(df_limpio.columns))
             
     except Exception as e:
