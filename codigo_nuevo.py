@@ -6,23 +6,20 @@ import io
 import json
 
 st.set_page_config(page_title="Dashboard Inversión MOP", page_icon="📈", layout="wide")
-st.title("📊 Dashboard de Inversión MOP 2021 - comparativa por región")
+st.title("📊 Dashboard de Inversión MOP 2021")
 
 @st.cache_data
 def cargar_datos_seguros(filas_a_saltar):
     url = "https://datos.gob.cl/dataset/104d1ebf-4d1b-4c3d-af9e-e85e5bbf1fc9/resource/e9d62fab-96d3-40e0-8b6f-faf7891cfd4e/download/resumen-inversion-mop-2021.xls"
     
-    # 1. Descarga segura usando requests
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     respuesta = requests.get(url, headers=headers, timeout=15)
     respuesta.raise_for_status() 
     
-    # 2. Lectura en memoria con io y Pandas
     archivo_memoria = io.BytesIO(respuesta.content)
     df = pd.read_excel(archivo_memoria, skiprows=filas_a_saltar)
     df = df.dropna(how='all')
     
-    # 3. Conversión a JSON para un manejo estructurado
     datos_json_str = df.to_json(orient="records", force_ascii=False)
     datos_json = json.loads(datos_json_str)
     
@@ -36,41 +33,56 @@ with st.spinner('Descargando y procesando datos del gobierno...'):
     try:
         df_limpio, datos_en_json = cargar_datos_seguros(saltar_filas)
         
-        # Usamos pestañas (tabs) para organizar visualmente la aplicación
-        tab1, tab2, tab3 = st.tabs(["📈 Visualización (Gráfico)", "📋 Tabla de Datos", "📦 Estructura JSON"])
+        tab1, tab2, tab3 = st.tabs(["📈 Visualización (Gráficos)", "📋 Tabla de Datos", "📦 Estructura JSON"])
         
         with tab1:
-            st.subheader("📈 Gráfico de la Primera Fila")
-            
             if len(df_limpio.columns) >= 2 and not df_limpio.empty:
-                # 1. Extraemos solo la primera fila (índice 0)
+                
+                # --- GRÁFICO 1: Datos de la primera fila ---
+                st.subheader("📈 Gráfico 1: Análisis de la Primera Fila")
                 primera_fila = df_limpio.iloc[0]
-                
-                # 2. Usamos la primera celda como nombre/etiqueta principal
                 nombre_fila = primera_fila.iloc[0]
+                categorias_g1 = df_limpio.columns[1:].astype(str)
+                valores_g1 = pd.to_numeric(primera_fila.iloc[1:], errors='coerce')
                 
-                # 3. Las categorías (Eje X) serán los nombres de todas las columnas, saltando la primera
-                categorias = df_limpio.columns[1:].astype(str)
+                fig1, ax1 = plt.subplots(figsize=(12, 5))
+                ax1.bar(categorias_g1, valores_g1, color='#2c7fb8', edgecolor='black')
+                ax1.set_title(f'Datos para: {nombre_fila}', fontsize=14)
+                ax1.set_xlabel('Métricas', fontsize=10)
+                ax1.set_ylabel('Monto', fontsize=10)
+                ax1.tick_params(axis='x', labelrotation=45, labelsize=9)
+                ax1.grid(axis='y', linestyle='--', alpha=0.7)
                 
-                # 4. Los valores (Eje Y) serán los datos de la primera fila, saltando la primera celda
-                valores = pd.to_numeric(primera_fila.iloc[1:], errors='coerce')
-                
-                # Creamos la figura
-                fig, ax = plt.subplots(figsize=(12, 6))
-                ax.bar(categorias, valores, color='#2c7fb8', edgecolor='black')
+                fig1.tight_layout()
+                st.pyplot(fig1)
 
-                # Personalización
-                ax.set_title(f'Datos para: {nombre_fila}', fontsize=14)
-                ax.set_xlabel('Columnas (Categorías)', fontsize=10)
-                ax.set_ylabel('Monto', fontsize=10)
+                st.divider() # Línea separadora visual
+
+                # --- GRÁFICO 2: Comparación por columna seleccionada ---
+                st.subheader("📊 Gráfico 2: Comparación por Métrica")
                 
-                # Rotamos los nombres de las columnas a 45 grados por si son muy largos
-                ax.tick_params(axis='x', labelrotation=45, labelsize=9)
-                ax.grid(axis='y', linestyle='--', alpha=0.7)
+                # Menú desplegable para que el usuario elija la columna a graficar
+                columnas_disponibles = df_limpio.columns[1:].tolist()
+                columna_elegida = st.selectbox("Selecciona la métrica que deseas comparar:", columnas_disponibles)
                 
-                # Renderizamos en Streamlit
-                fig.tight_layout()
-                st.pyplot(fig)
+                # Eje X: Primera columna (nombres/categorías)
+                categorias_g2 = df_limpio.iloc[:, 0].astype(str)
+                # Eje Y: Columna elegida por el usuario
+                valores_g2 = pd.to_numeric(df_limpio[columna_elegida], errors='coerce')
+
+                fig2, ax2 = plt.subplots(figsize=(12, 5))
+                # Usamos un color distinto para diferenciar los gráficos
+                ax2.bar(categorias_g2, valores_g2, color='#31a354', edgecolor='black') 
+                
+                ax2.set_title(f'Comparativa de: {columna_elegida}', fontsize=14)
+                ax2.set_xlabel(str(df_limpio.columns[0]), fontsize=10)
+                ax2.set_ylabel('Monto', fontsize=10)
+                ax2.tick_params(axis='x', labelrotation=45, labelsize=9)
+                ax2.grid(axis='y', linestyle='--', alpha=0.7)
+                
+                fig2.tight_layout()
+                st.pyplot(fig2)
+
             else:
                 st.warning("El dataset no tiene suficientes columnas o filas para graficar.")
                 
@@ -80,7 +92,6 @@ with st.spinner('Descargando y procesando datos del gobierno...'):
             
         with tab3:
             st.subheader("Datos Estructurados (JSON)")
-            st.markdown("Visualización nativa del objeto JSON generado a partir de la consulta:")
             st.json(datos_en_json)
 
         st.divider()
