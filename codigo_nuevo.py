@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import requests
 import io
 import json
-import textwrap # Para ajustar textos largos en los gráficos
+import textwrap
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Dashboard Inversión MOP", page_icon="📈", layout="wide")
@@ -15,17 +15,14 @@ st.title("📊 Dashboard de Inversión MOP 2021")
 def cargar_datos_seguros(filas_a_saltar):
     url = "https://datos.gob.cl/dataset/104d1ebf-4d1b-4c3d-af9e-e85e5bbf1fc9/resource/e9d62fab-96d3-40e0-8b6f-faf7891cfd4e/download/resumen-inversion-mop-2021.xls"
     
-    # 1. Descarga segura simulando un navegador
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     respuesta = requests.get(url, headers=headers, timeout=15)
     respuesta.raise_for_status() 
     
-    # 2. Lectura en memoria
     archivo_memoria = io.BytesIO(respuesta.content)
     df = pd.read_excel(archivo_memoria, skiprows=filas_a_saltar)
     df = df.dropna(how='all')
     
-    # 3. Conversión a JSON para la pestaña de estructura
     datos_json_str = df.to_json(orient="records", force_ascii=False)
     datos_json = json.loads(datos_json_str)
     
@@ -72,7 +69,7 @@ with st.spinner('Descargando y procesando datos del gobierno...'):
                 st.divider()
 
                 # ==========================================
-                # GRÁFICO 2: Comparación por Métrica (Text Wrap)
+                # GRÁFICO 2: Comparación por Métrica (90 grados)
                 # ==========================================
                 st.subheader("📊 Gráfico 2: Comparación por Métrica")
                 
@@ -82,9 +79,9 @@ with st.spinner('Descargando y procesando datos del gobierno...'):
                 categorias_g2 = df_limpio.iloc[:, 0].astype(str).tolist()
                 valores_g2 = pd.to_numeric(df_limpio[columna_elegida], errors='coerce')
 
-                # Ancho dinámico para evitar que las barras se aplasten si hay muchos datos
-                ancho_figura = max(12, len(categorias_g2) * 0.6)
-                fig2, ax2 = plt.subplots(figsize=(ancho_figura, 6))
+                # Aumentamos el espaciado multiplicando por 0.9 y damos más altura (7)
+                ancho_figura = max(14, len(categorias_g2) * 0.9)
+                fig2, ax2 = plt.subplots(figsize=(ancho_figura, 7))
                 
                 ax2.bar(categorias_g2, valores_g2, color='#31a354', edgecolor='black') 
                 
@@ -92,11 +89,13 @@ with st.spinner('Descargando y procesando datos del gobierno...'):
                 ax2.set_xlabel(str(df_limpio.columns[0]), fontsize=10)
                 ax2.set_ylabel('Monto', fontsize=10)
                 
-                # Cortar textos largos en varias líneas (cada 12 caracteres)
-                etiquetas_cortadas = [textwrap.fill(texto, width=12) for texto in categorias_g2]
+                # Cortar textos largos cada 25 caracteres para evitar bloques anchos
+                etiquetas_cortadas = [textwrap.fill(texto, width=25) for texto in categorias_g2]
                 
                 ax2.set_xticks(range(len(categorias_g2)))
-                ax2.set_xticklabels(etiquetas_cortadas, rotation=45, ha='right', fontsize=9)
+                # Rotación a 90 grados, centrado directamente bajo la barra
+                ax2.set_xticklabels(etiquetas_cortadas, rotation=90, ha='center', va='top', fontsize=9)
+                
                 ax2.grid(axis='y', linestyle='--', alpha=0.7)
                 
                 fig2.tight_layout()
