@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.ticker import FuncFormatter # NUEVO: Para formatear el eje Y
+from matplotlib.ticker import FuncFormatter # Formatear el eje Y.
 import requests
 import io
 import json
@@ -9,13 +9,13 @@ import textwrap
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Dashboard Inversión MOP", page_icon="📈", layout="wide")
-st.title("📊 Dashboard de Inversión MOP 2021")
+st.title("📊 Dashboard de Inversión MOP 2021 - Análisis por Región")
 
 # --- FUNCIÓN DE FORMATO DE MONEDA ---
 # Esta función convierte números grandes a texto resumido (ej: 1500000 -> $1.5M)
 def formato_moneda(x, pos):
     if x >= 1_000_000_000:
-        return f'${x*1e-9:.1f}B' # Miles de millones (Billions)
+        return f'${x*1e-9:.1f}MM' # Miles de millones 
     elif x >= 1_000_000:
         return f'${x*1e-6:.1f}M' # Millones
     elif x >= 1_000:
@@ -86,7 +86,7 @@ with st.spinner('Descargando y procesando datos del gobierno...'):
                 st.divider()
 
                 # ==========================================
-                # GRÁFICO 2: Comparación por Métrica (90 grados)
+                # GRÁFICO 2: Comparación por Métrica
                 # ==========================================
                 st.subheader("📊 Gráfico 2: Comparación por Métrica")
                 
