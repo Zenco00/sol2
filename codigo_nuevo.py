@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter # NUEVO: Para formatear el eje Y
 import requests
 import io
 import json
@@ -9,6 +10,18 @@ import textwrap
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Dashboard Inversión MOP", page_icon="📈", layout="wide")
 st.title("📊 Dashboard de Inversión MOP 2021")
+
+# --- FUNCIÓN DE FORMATO DE MONEDA ---
+# Esta función convierte números grandes a texto resumido (ej: 1500000 -> $1.5M)
+def formato_moneda(x, pos):
+    if x >= 1_000_000_000:
+        return f'${x*1e-9:.1f}B' # Miles de millones (Billions)
+    elif x >= 1_000_000:
+        return f'${x*1e-6:.1f}M' # Millones
+    elif x >= 1_000:
+        return f'${x*1e-3:.1f}K' # Miles
+    else:
+        return f'${x:.0f}'       # Menos de mil
 
 # --- FUNCIÓN DE EXTRACCIÓN DE DATOS ---
 @st.cache_data
@@ -59,7 +72,11 @@ with st.spinner('Descargando y procesando datos del gobierno...'):
                 ax1.bar(categorias_g1, valores_g1, color='#2c7fb8', edgecolor='black')
                 ax1.set_title(f'Datos para: {nombre_fila}', fontsize=14)
                 ax1.set_xlabel('Métricas', fontsize=10)
-                ax1.set_ylabel('Monto', fontsize=10)
+                ax1.set_ylabel('Monto ($)', fontsize=10)
+                
+                # APLICAMOS EL FORMATO AL EJE Y
+                ax1.yaxis.set_major_formatter(FuncFormatter(formato_moneda))
+                
                 ax1.tick_params(axis='x', labelrotation=45, labelsize=9)
                 ax1.grid(axis='y', linestyle='--', alpha=0.7)
                 
@@ -79,7 +96,6 @@ with st.spinner('Descargando y procesando datos del gobierno...'):
                 categorias_g2 = df_limpio.iloc[:, 0].astype(str).tolist()
                 valores_g2 = pd.to_numeric(df_limpio[columna_elegida], errors='coerce')
 
-                # Aumentamos el espaciado multiplicando por 0.9 y damos más altura (7)
                 ancho_figura = max(14, len(categorias_g2) * 0.9)
                 fig2, ax2 = plt.subplots(figsize=(ancho_figura, 7))
                 
@@ -87,13 +103,14 @@ with st.spinner('Descargando y procesando datos del gobierno...'):
                 
                 ax2.set_title(f'Comparativa de: {columna_elegida}', fontsize=14)
                 ax2.set_xlabel(str(df_limpio.columns[0]), fontsize=10)
-                ax2.set_ylabel('Monto', fontsize=10)
+                ax2.set_ylabel('Monto ($)', fontsize=10)
                 
-                # Cortar textos largos cada 25 caracteres para evitar bloques anchos
+                # APLICAMOS EL FORMATO AL EJE Y
+                ax2.yaxis.set_major_formatter(FuncFormatter(formato_moneda))
+                
                 etiquetas_cortadas = [textwrap.fill(texto, width=25) for texto in categorias_g2]
                 
                 ax2.set_xticks(range(len(categorias_g2)))
-                # Rotación a 90 grados, centrado directamente bajo la barra
                 ax2.set_xticklabels(etiquetas_cortadas, rotation=90, ha='center', va='top', fontsize=9)
                 
                 ax2.grid(axis='y', linestyle='--', alpha=0.7)
